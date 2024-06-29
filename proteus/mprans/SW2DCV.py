@@ -346,7 +346,8 @@ class Coefficients(proteus.TransportCoefficients.TC_base):
                 self.b.dof=self.bathymetry[:,2].copy()
         else:
             self.b.dof = self.bathymetry([x, y])
-
+        assert mesh.nodeArray.shape[1]==3
+        mesh.nodeArray[:,2] = self.b.dof
     def initializeElementQuadrature(self, t, cq):
         pass
 
@@ -453,7 +454,7 @@ class LevelModel(proteus.Transport.OneLevelTransport):
         # explicit Dirichlet conditions for now, no Dirichlet BC constraints
         self.dirichletNodeSetList = None
         self.coefficients = coefficients
-        # cek hack? give coefficients a bathymetriy array
+        # cek hack? give coefficients a bathymetry array
         import copy
         self.coefficients.b = self.u[0].copy()
         self.coefficients.b.name = 'b'

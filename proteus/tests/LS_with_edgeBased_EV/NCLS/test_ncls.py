@@ -11,7 +11,7 @@ comm = Comm.get()
 Profiling.logLevel=2
 Profiling.verbose=True
 import numpy as np
-import tables
+import h5py
 import sys
 sys.path.append('import_files')
 from . import ncls
@@ -61,11 +61,11 @@ class TestNCLS(object):
         self.sim_names.append(ns.modelList[0].name)
         ns.calculateSolution('ncls')
         # COMPARE VS SAVED FILES #
-        actual = tables.open_file('ncls_level_0_pureAdvection_SUPG.h5','r')
+        actual = h5py.File('ncls_level_0_pureAdvection_SUPG.h5','r')
         expected_path = 'comparison_files/' + 'comparison_' + 'ncls_level_0_pureAdvection_SUPG_' + '_u_t2.csv'
         #write comparison file
-        #np.array(actual.root.u_t2).tofile(os.path.join(self._scriptdir, expected_path),sep=",")
-        np.testing.assert_almost_equal(np.fromfile(os.path.join(self._scriptdir, expected_path),sep=","),np.array(actual.root.u_t2).flatten(),decimal=10)
+        #np.array(actual['u_t2']).tofile(os.path.join(self._scriptdir, expected_path),sep=",")
+        np.testing.assert_almost_equal(np.fromfile(os.path.join(self._scriptdir, expected_path),sep=","),np.array(actual['u_t2']).flatten(),decimal=10)
         actual.close()
         
     def test_pure_advection_ev1(self):
@@ -88,11 +88,11 @@ class TestNCLS(object):
         self.sim_names.append(ns.modelList[0].name)
         ns.calculateSolution('ncls')
         # COMPARE VS SAVED FILES #
-        actual = tables.open_file('ncls_level_0_pureAdvection_EV1.h5','r')
+        actual = h5py.File('ncls_level_0_pureAdvection_EV1.h5','r')
         expected_path = 'comparison_files/' + 'comparison_' + 'ncls_level_0_pureAdvection_EV1_' + '_u_t2.csv'
         #write comparison file
-        #np.array(actual.root.u_t2).tofile(os.path.join(self._scriptdir, expected_path),sep=",")
-        np.testing.assert_almost_equal(np.fromfile(os.path.join(self._scriptdir, expected_path),sep=","),np.array(actual.root.u_t2).flatten(),decimal=10)
+        #np.array(actual['u_t2']).tofile(os.path.join(self._scriptdir, expected_path),sep=",")
+        np.testing.assert_almost_equal(np.fromfile(os.path.join(self._scriptdir, expected_path),sep=","),np.array(actual['u_t2']).flatten(),decimal=10)
         actual.close()
 
     def test_coupez_with_redistancing_non_saturated(self):
@@ -115,11 +115,11 @@ class TestNCLS(object):
         self.sim_names.append(ns.modelList[0].name)
         ns.calculateSolution('ncls')
         # COMPARE VS SAVED FILES #
-        actual = tables.open_file('ncls_level_0_non_saturated_ls.h5','r')
+        actual = h5py.File('ncls_level_0_non_saturated_ls.h5','r')
         expected_path = 'comparison_files/' + 'comparison_' + 'ncls_level_0_non_saturated_ls_' + '_u_t2.csv'
         #write comparison file
-        #np.array(actual.root.u_t2).tofile(os.path.join(self._scriptdir, expected_path),sep=",")
-        np.testing.assert_almost_equal(np.fromfile(os.path.join(self._scriptdir, expected_path),sep=","),np.array(actual.root.u_t2).flatten(),decimal=10)
+        #np.array(actual['u_t2']).tofile(os.path.join(self._scriptdir, expected_path),sep=",")
+        np.testing.assert_almost_equal(np.fromfile(os.path.join(self._scriptdir, expected_path),sep=","),np.array(actual['u_t2']).flatten(),decimal=10)
 
         actual.close()
         
@@ -143,12 +143,12 @@ class TestNCLS(object):
         self.sim_names.append(ns.modelList[0].name)
         ns.calculateSolution('ncls')                
         # COMPARE VS SAVED FILES #
-        actual = tables.open_file('ncls_level_0_saturated_ls.h5','r')
+        actual = h5py.File('ncls_level_0_saturated_ls.h5','r')
 
         expected_path = 'comparison_files/' + 'comparison_' + 'ncls_level_0_saturated_ls_' + '_u_t2.csv'
         #write comparison file
-        #np.array(actual.root.u_t2).tofile(os.path.join(self._scriptdir, expected_path),sep=",")
-        np.testing.assert_almost_equal(np.fromfile(os.path.join(self._scriptdir, expected_path),sep=","),np.array(actual.root.u_t2).flatten(),decimal=10)
+        #np.array(actual['u_t2']).tofile(os.path.join(self._scriptdir, expected_path),sep=",")
+        np.testing.assert_almost_equal(np.fromfile(os.path.join(self._scriptdir, expected_path),sep=","),np.array(actual['u_t2']).flatten(),decimal=10)
 
         actual.close()
         

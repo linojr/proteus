@@ -5132,6 +5132,7 @@ class InterpolatedBathymetryMesh(MultilevelTriangularMesh):
     """A triangular mesh that interpolates bathymetry from a point cloud"""
     def __init__(self,
                  domain,
+                 gmshOption,
                  triangleOptions,
                  atol=1.0e-4,
                  rtol=1.0e-4,
@@ -5157,19 +5158,27 @@ class InterpolatedBathymetryMesh(MultilevelTriangularMesh):
         self.bathyType=bathyType
         self.bathyAssignmentScheme=bathyAssignmentScheme
         self.errorNormType = errorNormType
-
-        logEvent("InterpolatedBathymetryMesh: Calling Triangle to generate 2D coarse mesh for "+self.domain.name)
-        runTriangle(domain.polyfile,
+        self.gmshOption = gmshOption
+        if gmshOption==True:
+            logEvent("InterpolatedBathymetryMesh: Calling gmsh to generate 2D coarse mesh for"+self.domain.name)
+            runGmsh(domain.polyfile)
+            logEvent("InterpolatedBathymetryMesh: Converting to Proteus Mesh")
+            self.coarseMesh= TriangularMesh()
+        else:
+            logEvent("InterpolatedBathymetryMesh: Calling Triangle to generate 2D coarse mesh for "+self.domain.name)
+            runTriangle(domain.polyfile,
                     self.triangleOptions)
-
-        logEvent("InterpolatedBathymetryMesh: Converting to Proteus Mesh")
-        self.coarseMesh = TriangularMesh()
+            logEvent("InterpolatedBathymetryMesh: Converting to Proteus Mesh")
+            self.coarseMesh = TriangularMesh() 
+        
         self.coarseMesh.generateFromTriangleFiles(filebase=domain.polyfile,base=1)
+        
         MultilevelTriangularMesh.__init__(self,0,0,0,skipInit=True,nLayersOfOverlap=0,
                                           parallelPartitioningType=MeshParallelPartitioningTypes.node)
         self.generateFromExistingCoarseMesh(self.coarseMesh,1,
                                             parallelPartitioningType=MeshParallelPartitioningTypes.node)
         self.computeGeometricInfo()
+        
         #allocate some arrays based on the bathymetry data
         logEvent("InterpolatedBathymetryMesh:Allocating data structures for bathymetry interpolation algorithm")
         if bathyType == "points":
@@ -5189,15 +5198,20 @@ class InterpolatedBathymetryMesh(MultilevelTriangularMesh):
             z = self.domain.bathy[:,2].reshape(self.domain.bathyGridDim).transpose()
             self.bathyInterpolant = scipy_interpolate.RectBivariateSpline(x,y,z,kx=1,ky=1)
             #self.bathyInterpolant = scipy_interpolate.interp2d(x,y,z)
-        #
+        
         logEvent("InterpolatedBathymetryMesh: Locating points on initial mesh")
         self.locatePoints_initial(self.meshList[-1])
+        
         logEvent("InterpolatedBathymetryMesh:setting mesh bathymetry from data")
         self.setMeshBathymetry(self.meshList[-1])
         logEvent("InterpolatedBathymetryMesh: tagging elements for refinement")
         self.tagElements(self.meshList[-1])
-        levels = 0
-        error = 1.0;
+        if gmshOption==True:
+            levels=0
+            error= 0.5 #self.tagElements(self.meshList[-1])
+        else:
+            levels = 0
+            error = 1.0;  #self.tagElements?
         while error >= 1.0 and self.meshList[-1].nNodes_global < self.maxNodes and levels < self.maxLevels:
             levels += 1
             logEvent("InterpolatedBathymetryMesh: Locally refining, level = %i" % (levels,))
@@ -6393,6 +6407,40 @@ def getMeshIntersections(mesh, toPolyhedron, endpoints):
                 continue
             intersections.update(((tuple(elementIntersections[0]), tuple(elementIntersections[1])),),)
     return intersections
+def runGmsh(polyfile,
+               baseFlags="Yp",  #change baseflags for gmsh file
+               name = ""):
+    """
+    Generate msh files from a polyfile.
+
+    Arguments
+    ---------
+    polyfile : str
+        Filename with appropriate data for gmsh.
+    baseFlags : str
+        Standard Tetgen options for generation
+    name : str
+    """
+    #rom subprocess import check_call
+    #gmshcmd = "gmsh -%s -e %s.poly" % (baseFlags, polyfile)  #change this to accept gmsh command. 
+    # 
+    #check_call(gmshcmd,shell=True)
+    logEvent("Done running gmsh")
+    elefile = "%s.1.ele" % polyfile
+    nodefile = "%s.1.node" % polyfile
+    edgefile = "%s.1.edge" % polyfile
+    assert os.path.exists(elefile), "no 1.ele"
+    tmp = "%s.ele" % polyfile
+    os.rename(elefile,tmp)
+    assert os.path.exists(tmp), "no .ele"
+    assert os.path.exists(nodefile), "no 1.node"
+    tmp = "%s.node" % polyfile
+    os.rename(nodefile,tmp)
+    assert os.path.exists(tmp), "no .node"
+    if os.path.exists(edgefile):
+        tmp = "%s.edge" % polyfile
+        os.rename(edgefile,tmp)
+        assert os.path.exists(tmp), "no 1.edge"
 
 def runTriangle(polyfile,
                baseFlags="Yp",

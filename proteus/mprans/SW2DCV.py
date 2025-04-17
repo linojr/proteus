@@ -327,11 +327,11 @@ class Coefficients(proteus.TransportCoefficients.TC_base):
         self.model = modelList[self.modelIndex]
         # pass
 
-    def initializeMesh(self, mesh):
+    def initializeMesh(self, mesh): 
         x = mesh.nodeArray[:, 0]
         y = mesh.nodeArray[:, 1]
         if self.bathymetry is None:
-            self.b.dof = mesh.nodeArray[:, 2].copy()
+            self.b.dof = mesh.nodeArray[:, 2].copy()     
         elif type(self.bathymetry) is np.ndarray:
             if self.bathymetry.ndim==1:
                 self.b.dof = self.bathymetry.copy()
@@ -340,9 +340,10 @@ class Coefficients(proteus.TransportCoefficients.TC_base):
             elif self.bathymetry.shape[1]==3:
                 self.b.dof=self.bathymetry[:,2].copy()
         else:
-            self.b.dof = self.bathymetry([x, y])
+            self.b.dof = self.bathymetry([x, y])          
         assert mesh.nodeArray.shape[1]==3
-        mesh.nodeArray[:,2] = self.b.dof
+        mesh.nodeArray[:,2] = self.b.dof[mesh.nodeNumbering_subdomain2global] 
+        
     def initializeElementQuadrature(self, t, cq):
         pass
 
@@ -449,7 +450,7 @@ class LevelModel(proteus.Transport.OneLevelTransport):
         # explicit Dirichlet conditions for now, no Dirichlet BC constraints
         self.dirichletNodeSetList = None
         self.coefficients = coefficients
-        # cek hack? give coefficients a bathymetry array
+        # cek hack? give coefficients a bathymetriy array
         import copy
         self.coefficients.b = self.u[0].copy()
         self.coefficients.b.name = 'b'

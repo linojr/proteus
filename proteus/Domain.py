@@ -189,6 +189,8 @@ class D_base(object):
         he_max: Optional[double]
             Size of the maximum characteristic element size. Should be set
             for meshes using a uniform refinement.
+        lc: Optional[double]
+            target mesh size
         """
         self.geofile = fileprefix
         self.polyfile = fileprefix

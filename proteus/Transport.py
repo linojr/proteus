@@ -6279,6 +6279,7 @@ class MultilevelTransport(object):
             logEvent("Setting Boundary Conditions-1")
             for cj in list(trialSpaceDict.keys()):
                 if cj not in dirichletConditionsSetterDict:
+
                     dirichletConditionsSetterDict[cj] = None
                 if cj not in fluxBoundaryConditionsDict:
                     fluxBoundaryConditionsDict[cj] = None
@@ -6385,9 +6386,11 @@ class MultilevelTransport(object):
             #
             logEvent(memory("boundary conditions","MultilevelTransport"),level=4)
             logEvent("Initializing OneLevelTransport",level=2)
+            
             uDict[0].femSpace.mesh.nLayersOfOverlap = mesh.nLayersOfOverlap
             uDict[0].femSpace.mesh.parallelPartitioningType = mesh.parallelPartitioningType
-            uDict[0].femSpace.mesh.nodeNumbering_subdomain2global = mesh.nodeNumbering_subdomain2global
+            uDict[0].femSpace.mesh.nodeNumbering_subdomain2global = mesh.nodeNumbering_subdomain2global     ###NEW LINE
+            #uDict[0].femSpace.mesh.nodeArray = mesh.nodeArray[mesh.nodeNumbering_subdomain2global,:]        ###NEW LINE
             transport=self.OneLevelTransportType(uDict,
                                             phiDict,
                                             testSpaceDict,
@@ -6662,6 +6665,7 @@ class MultilevelTransport(object):
                     logEvent("Allocating un-ghosted parallel vectors on rank %i" % comm.rank(),level=2)
                     par_du = ParVec_petsc4py(du,par_bs,par_n,par_N)
                     logEvent("Allocating matrix on rank %i" % comm.rank(),level=2)
+                    
                     try:
                         transport.par_info.par_bs = par_bs
                         transport.par_info.par_n = par_n
@@ -6673,6 +6677,7 @@ class MultilevelTransport(object):
                     except AttributeError:
                         logEvent("Transport class has no ParInfo_petsc4py class to store parallel data.",level=4)
                     par_jacobian = ParMat_petsc4py(jacobian,par_bs,par_n,par_N,par_nghost,subdomain2global,pde=transport)
+
             elif  (options.multilevelLinearSolver == KSP_petsc4py or
                    options.levelLinearSolver == KSP_petsc4py):
                 assert trialSpaceDict[0].dofMap.subdomain2global is not None, "need trivial subdomain2global in dofMap for running PETSc"
@@ -6686,6 +6691,7 @@ class MultilevelTransport(object):
                 subdomain2global = trialSpaceDict[0].dofMap.subdomain2global
                 max_dof_neighbors= trialSpaceDict[0].dofMap.max_dof_neighbors
                 logEvent("Allocating ghosted parallel vectors on rank %i" % comm.rank(),level=2)
+                
                 if mixed:
                     par_N = par_n = sum([ts.dofMap.nDOF_all_processes for ts in list(trialSpaceDict.values())])
                     transport.owned_local = numpy.arange(par_n)
@@ -6729,10 +6735,12 @@ class MultilevelTransport(object):
                         logEvent("Transport class has no ParInfo_petsc4py class to store parallel data.",level=4)
             else:
                 transport.owned_local = numpy.arange(transport.dim)
+                
                 par_u = None
                 par_r = None
                 par_du = None
                 par_jacobian = None
+            
             self.par_uList.append(par_u)
             self.par_duList.append(par_du)
             self.par_rList.append(par_r)
@@ -6749,6 +6757,7 @@ class MultilevelTransport(object):
             self.bcDictList)
         logEvent(memory("mesh transfers","MultilevelTransport"),level=4)
         #mwf hack keep reference to mlMesh in Transport ctor for now
+        
         self.mlMeshSave = mlMesh
         
     def setInitialConditions(self,getInitialConditionsDict,T=0.0):

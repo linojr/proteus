@@ -394,17 +394,34 @@ class Coefficients(proteus.TransportCoefficients.TC_base):
     def initializeMesh(self, mesh):
         x = mesh.nodeArray[:, 0]
         y = mesh.nodeArray[:, 1]
-        if self.bathymetry is None:             
-            self.b.dof = mesh.nodeArray[:, 2].copy()   # does this need to be a copy
+        comm=Comm.get()
+        if self.bathymetry is None:
+            self.b.dof = mesh.nodeArray[:, 2].copy()     
         elif type(self.bathymetry) is np.ndarray:
+            #if mpi, use mapping old2new to rearrange b.dof vector globally
             if self.bathymetry.ndim==1:
-                self.b.dof = self.bathymetry.copy()
+                b_global = self.bathymetry.copy() 
             elif self.bathymetry.shape[1]==1:
-                self.b.dof = self.bathymetry[:,0].copy()
+                b_global = self.bathymetry[:,0].copy()
             elif self.bathymetry.shape[1]==3:
-                self.b.dof=self.bathymetry[:,2].copy()
-        else:                                   
-            self.b.dof = self.bathymetry([x, y])
+                b_global = self.bathymetry[:,2].copy()
+            if comm.size() > 1: 
+                fname= 'mappings.h5'
+                with h5py.File(fname,'r') as f:
+                    vname=list(f.keys())[0]
+                    old2new=np.asarray(f[vname])       
+                sub2glob=mesh.nodeNumbering_subdomain2global                                   
+                indx=[]
+                for i in range (0, len(sub2glob)):  
+                    indx.append(np.where(old2new==sub2glob[i]))
+                self.b.dof = np.ravel(b_global[indx])
+                mesh.nodeArray[:,2] = self.b.dof
+            else:
+                mesh.nodeArray[:,2] = self.b.dof           
+        else:
+            self.b.dof = self.bathymetry([x, y])          
+            mesh.nodeArray[:,2] = self.b.dof                #if bathy is a function no need to pass subdomain info here
+        assert mesh.nodeArray.shape[1]==3
 
     def initializeElementQuadrature(self, t, cq):
         self.q_velocity_porous = np.zeros(cq[('velocity', 0)].shape, 'd')
